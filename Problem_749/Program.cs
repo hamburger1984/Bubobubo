@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Shared;
 
 namespace Problem_749
@@ -18,17 +21,37 @@ namespace Problem_749
     {
         static void Main(string[] args)
         {
-            var maxDigits = 16;
-            ulong number = 0;
-            uint[] digits = {0};
+            uint maxDigits = 16;
+           
+            long maxNumber = IntPow(10, maxDigits) - 1;
+            Log.Info($"Searching power sums for {maxDigits} digits, 0..{maxNumber}");
+
+            var steps = 100;
+            var step = maxNumber / steps;
+
+            var subSums = Enumerable.Range(0, steps).AsParallel()
+                .Select(i => SearchPowerSums(i * (step + 1), i == steps - 1 ? maxNumber : (i + 1) * step)).ToArray();
+
+            var totalSum = 0L;
+            foreach (var s in subSums)
+                totalSum += s;
+
+            Log.Info($"Total {totalSum} from power sums with max {maxDigits} digits");
+        }
+
+        static long SearchPowerSums(long startNumber, long endNumber)
+        {
+            var number = startNumber;
+            var digits = CreateDigits(number);
             var count = 0;
-            ulong sum = 0L;
+            var sum = 0L;
 
             while (true)
             {
                 number++;
+                if (number > endNumber) break;
+
                 digits = Increment(digits);
-                if (digits.Length > maxDigits) break;
 
                 if (IsPowerSum(number, digits))
                 {
@@ -37,7 +60,26 @@ namespace Problem_749
                 }
             }
 
-            Log.Debug($"Found {count} power sums for {maxDigits} digits - sum is {sum}.");
+            Log.Debug($"{startNumber}..{endNumber}: Found {count} power sums, their sum is {sum}.");
+            return sum;
+        }
+
+        static uint[] CreateDigits(long number)
+        {
+            var result = new List<uint>();
+
+            while (true)
+            {
+                var digit = number % 10;
+                result.Add((uint) digit);
+
+                number -= digit;
+                if (number == 0) break;
+
+                number /= 10;
+            }
+
+            return result.ToArray();
         }
 
         static uint[] Increment(uint[] digits)
@@ -69,23 +111,24 @@ namespace Problem_749
             return result;
         }
 
-        static bool IsPowerSum(ulong number, params uint[] digits)
+        static bool IsPowerSum(long number, params uint[] digits)
         {
             var (lower, higher) = (number - 1, number + 1);
 
-            uint k = 2;
-            ulong lastNumber = 0;
+            var k = (uint) Math.Max(2, digits.Length - 1);
+            long lastNumber = 0;
             do
             {
+                //number = digits.AsParallel().Select(d => IntPow(d, k)).Sum();
+
                 number = 0;
                 foreach (var d in digits)
                     number += IntPow(d, k);
-
                 // Log.Debug($" .. {string.Join(",", digits.Reverse())} .. k {k} -> {number}");
 
                 if (number == lower || number == higher)
                 {
-                    Log.Debug($"Found {number} as {k}-th power sum of {string.Join(",", digits.Reverse())}");
+                    Log.Debug($"Found {number} as {k}-th power sum of {string.Join(",", digits)}");
                     return true;
                 }
 
@@ -104,9 +147,9 @@ namespace Problem_749
         }
 
         // https://stackoverflow.com/questions/383587/how-do-you-do-integer-exponentiation-in-c
-        static ulong IntPow(uint x, uint pow)
+        static long IntPow(long x, uint pow)
         {
-            ulong ret = 1;
+            long ret = 1;
             while (pow != 0)
             {
                 if ((pow & 1) == 1)
