@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,22 +20,46 @@ namespace Problem_749
 
     class Program
     {
+        private static LUT<long> Powers;
+
         static void Main(string[] args)
         {
-            uint maxDigits = 16;
-           
-            long maxNumber = IntPow(10, maxDigits) - 1;
+            uint maxDigits = 16; // TODO: 16
+
+            Powers = new LUT<long>(10, (int) maxDigits * 2, delegate((uint col, uint row) position)
+            {
+                if (position.row == 0) return 1;
+
+                if (position.col == 0) return 0;
+
+                return IntPow(position.col, position.row);
+            });
+
+            var maxNumber = IntPow(10, maxDigits) - 1;
             Log.Info($"Searching power sums for {maxDigits} digits, 0..{maxNumber}");
 
-            var steps = 100;
-            var step = maxNumber / steps;
+            var step = Math.Min(maxNumber / 1000L, 100_000_000L);
+            var steps = (int) (maxNumber / step);
 
-            var subSums = Enumerable.Range(0, steps).AsParallel()
-                .Select(i => SearchPowerSums(i * (step + 1), i == steps - 1 ? maxNumber : (i + 1) * step)).ToArray();
-
+            var totalLock = new object();
             var totalSum = 0L;
-            foreach (var s in subSums)
-                totalSum += s;
+            var solved = 0;
+            var sw = Stopwatch.StartNew();
+
+            Parallel.For(0, steps, i =>
+            {
+                var start = i * step + 1;
+                var end = i == steps - 1 ? maxNumber : ((long) i + 1) * step;
+
+                var localSum = SearchPowerSums(start, end);
+                lock (totalLock)
+                {
+                    solved++;
+                    totalSum += localSum;
+
+                    Console.Write($"\r ----- {solved} / {steps} .. {sw.Elapsed} .. {totalSum} ----");
+                }
+            });
 
             Log.Info($"Total {totalSum} from power sums with max {maxDigits} digits");
         }
@@ -60,7 +85,8 @@ namespace Problem_749
                 }
             }
 
-            Log.Debug($"{startNumber}..{endNumber}: Found {count} power sums, their sum is {sum}.");
+            if (count > 0)
+                Log.Debug($"{startNumber}..{endNumber}: Found {count} power sums, their sum is {sum}.");
             return sum;
         }
 
@@ -76,7 +102,7 @@ namespace Problem_749
                 number -= digit;
                 if (number == 0) break;
 
-                number /= 10;
+                number = number / 10L;
             }
 
             return result.ToArray();
@@ -117,33 +143,40 @@ namespace Problem_749
 
             var k = (uint) Math.Max(2, digits.Length - 1);
             long lastNumber = 0;
-            do
+            while (true)
             {
-                //number = digits.AsParallel().Select(d => IntPow(d, k)).Sum();
-
                 number = 0;
-                foreach (var d in digits)
-                    number += IntPow(d, k);
-                // Log.Debug($" .. {string.Join(",", digits.Reverse())} .. k {k} -> {number}");
+                if (k < Powers.Rows)
+                    foreach (var d in digits)
+                        number += Powers.Get((d, k));
+                else
+                    foreach (var d in digits)
+                        number += IntPow(d, k);
 
                 if (number == lower || number == higher)
                 {
-                    Log.Debug($"Found {number} as {k}-th power sum of {string.Join(",", digits)}");
+                    Log.Debug(
+                        $"Found {digits.Length} digits number {number} as {nth(k)} power sum of {string.Join(",", digits)}");
                     return true;
                 }
 
-                if (number <= lastNumber)
+                if (number <= lastNumber || number > higher)
                 {
                     //Log.Debug($"!!!! not increasing .. stop");
                     return false;
                 }
 
                 lastNumber = number;
-
                 k++;
-            } while (number < higher);
+            }
+        }
 
-            return false;
+        static string nth(uint n)
+        {
+            if (n == 1) return "1-st";
+            if (n == 2) return "2-nd";
+            if (n == 3) return "3-rd";
+            return $"{n}-th";
         }
 
         // https://stackoverflow.com/questions/383587/how-do-you-do-integer-exponentiation-in-c
