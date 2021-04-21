@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Shared;
 
@@ -23,47 +21,8 @@ namespace Problem_749
     {
         private static LUT<long> Powers;
 
-        //private static void Benchmarking()
-        //{
-        //    var n = 0UL;
-        //    var maxDigits = 12;
-        //    var upperLimit = (ulong) Math.Pow(10, maxDigits);
-
-        //    //var limits = Enumerable.Range(0, maxDigits + 1).Select(d => (ulong) Math.Pow(10, d)).ToArray();
-
-        //    var digits = new uint[maxDigits];
-        //    int digitsCount = 0;
-        //    int filledDigits;
-
-        //    var sw = Stopwatch.StartNew();
-        //    while (true)
-        //    {
-        //        filledDigits = digits.Fill(n, true);
-
-        //        if (filledDigits > digitsCount)
-        //        {
-        //            sw.Stop();
-
-        //            digitsCount = filledDigits;
-        //            Console.WriteLine($"{digitsCount} {string.Join(",", digits.Reverse())} .. {sw.Elapsed}");
-        //            sw.Restart();
-        //        }
-
-        //        n++;
-
-        //        if (n == upperLimit)
-        //        {
-        //            sw.Stop();
-        //            Console.WriteLine($"{digitsCount} {string.Join(",", digits.Reverse())} .. {sw.Elapsed}");
-        //            break;
-        //        }
-        //    }
-        //}
-
         static void Main(string[] args)
         {
-            //Benchmarking();
-
             int maxDigits = 10; // TODO: 16
             var upperLimit = (long) Math.Pow(10, maxDigits);
             var maxNumber = upperLimit - 1L;
@@ -130,79 +89,6 @@ namespace Problem_749
             Log.Info($"Total {totalSum} from power sums with max {maxDigits} digits");
         }
 
-        //static long SearchPowerSums(long startNumber, long endNumber)
-        //{
-        //    var number = startNumber;
-        //    var digits = CreateDigits(number);
-        //    var count = 0;
-        //    var sum = 0L;
-
-        //    while (true)
-        //    {
-        //        number++;
-        //        if (number > endNumber) break;
-
-        //        digits = Increment(digits);
-
-        //        if (IsPowerSum(number, digits))
-        //        {
-        //            count++;
-        //            sum += number;
-        //        }
-        //    }
-
-        //    if (count > 0)
-        //        Log.Debug($"{startNumber}..{endNumber}: Found {count} power sums, their sum is {sum}.");
-        //    return sum;
-        //}
-
-        //static uint[] CreateDigits(long number)
-        //{
-        //    var result = new List<uint>();
-
-        //    while (true)
-        //    {
-        //        var digit = number % 10;
-        //        result.Add((uint) digit);
-
-        //        number -= digit;
-        //        if (number == 0) break;
-
-        //        number = number / 10L;
-        //    }
-
-        //    return result.ToArray();
-        //}
-
-        //static uint[] Increment(uint[] digits)
-        //{
-        //    var digit = 0;
-        //    while (true)
-        //    {
-        //        digits[digit] = (digits[digit] + 1) % 10;
-        //        if (digits[digit] == 0)
-        //        {
-        //            // enough space for digits?
-        //            if (digits.Length == digit + 1) digits = Extend(digits);
-
-        //            // continue for carry
-        //        }
-        //        else
-        //            break;
-
-        //        digit++;
-        //    }
-
-        //    return digits;
-        //}
-
-        //static uint[] Extend(uint[] array)
-        //{
-        //    var result = new uint[array.Length + 1];
-        //    Array.Copy(array, result, array.Length);
-        //    return result;
-        //}
-
         static bool IsPowerSum(long number, int numDigits, params uint[] digits)
         {
             var (lower, higher) = (number - 1, number + 1);
@@ -247,7 +133,7 @@ namespace Problem_749
             return $"{n}-th";
         }
 
-// https://stackoverflow.com/questions/383587/how-do-you-do-integer-exponentiation-in-c
+        // https://stackoverflow.com/questions/383587/how-do-you-do-integer-exponentiation-in-c
         static long IntPow(long x, uint pow)
         {
             long ret = 1;
