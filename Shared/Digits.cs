@@ -7,21 +7,27 @@ namespace Shared
         public static int Fill(this uint[] digits, long number, bool assumeFilledWithPredecessor)
         {
             var index = 0;
-            uint digit;
             while (true)
             {
-                digit = (uint) (number % 10L);
+                var digit = (uint) (number % 10L);
+
+                //if (index == digits.Length)
+                //{
+                //    Log.Info($"Will try to write {digit} to cell {index} into {string.Join(",", digits)}");
+                //}
+
                 digits[index] = digit;
                 number /= 10L;
                 index++;
 
-                if (number == 0)
+
+                if (number <= 0)
                 {
                     // index is the total amount of relevant digits now
                     return index;
                 }
 
-                // only fill higher digits, if array is now filled with predecessor already
+                // only fill higher digits, if array is not filled with predecessor already
                 if (digit != 0 && assumeFilledWithPredecessor)
                     break;
             }

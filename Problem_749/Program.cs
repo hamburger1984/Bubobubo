@@ -23,7 +23,7 @@ namespace Problem_749
 
         static void Main(string[] args)
         {
-            int maxDigits = 10; // TODO: 16
+            int maxDigits = 16; // TODO: 16
             var upperLimit = (long) Math.Pow(10, maxDigits);
             var maxNumber = upperLimit - 1L;
 
@@ -41,24 +41,28 @@ namespace Problem_749
 
             Log.Debug($"{sw.Elapsed} Precalculated 0..{maxDigits * 2} power of 0..9");
 
-            var step = Math.Min(maxNumber / 1000L, 100_000_000L);
+            var step = Math.Min(maxNumber / 10000L, 100_000_000L);
             var steps = (int) (maxNumber / step);
             var totalLock = new object();
             var totalSum = 0L;
             var solved = 0;
 
-            Parallel.For(0, steps, i =>
+            void ProcessStep(int i)
             {
+                var localStep = step;
+                var localSteps = steps;
+                long localSum = 0L;
+
                 var pool = ArrayPool<uint>.Shared;
                 var digits = pool.Rent(maxDigits);
+                //var digits = new uint[maxDigits];
 
-                var number = i * step + 1;
-                var end = i == steps - 1 ? maxNumber : ((long) i + 1) * step;
+                var number = i * localStep + 1;
+                var end = i == localSteps - 1 ? maxNumber : ((long) i + 1) * localStep;
                 //Log.Debug($"{sw.Elapsed} Start searching {number}..{end}");
 
                 var numDigits = digits.Fill(number, false);
 
-                long localSum = 0L;
                 while (true)
                 {
                     if (IsPowerSum(number, numDigits, digits))
@@ -68,8 +72,6 @@ namespace Problem_749
 
                     number++;
 
-                    numDigits = Math.Max(digits.Fill(number, true), numDigits);
-
                     if (number > end)
                     {
                         lock (totalLock)
@@ -77,15 +79,19 @@ namespace Problem_749
                             solved++;
                             totalSum += localSum;
 
-                            Console.Write($"\r{sw.Elapsed} ----- {solved} / {steps} .. {totalSum} ----");
+                            Console.Write($"\r{sw.Elapsed} ----- {solved} / {localSteps} .. {totalSum} ----");
                         }
 
                         break;
                     }
+
+                    numDigits = Math.Max(digits.Fill(number, true), numDigits);
                 }
 
                 pool.Return(digits, true);
-            });
+            }
+
+            Parallel.For(0, steps, ProcessStep);
             Log.Info($"Total {totalSum} from power sums with max {maxDigits} digits");
         }
 
